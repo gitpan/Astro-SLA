@@ -1,5 +1,25 @@
+2003-08-18  Tim Jenness  <timj@jach.hawaii.edu>
+
+	* SLA.pm: Release Version 0.97 on CPAN
+
+2003-07-14  Tim Jenness  <timj@jach.hawaii.edu>
+
+	* SLA.xs: Need to add aTHX_ for Perl_croak to work with threads
+
+2003-07-03  Tim Jenness  <timj@jach.hawaii.edu>
+
+	* SLA.xs: Fix error in slaOap fortran interface. This was breaking
+	the comet test. Does not affect the C version.
+
+2003-07-02  Tim Jenness  <timj@jach.hawaii.edu>
+
+	* t/comet.t: Add a test for perturbation of orbital elements since
+	that is key functionality for some users.
+
 2002-09-15  Tim Jenness  <timj@jach.hawaii.edu>
 
+	--- VERSION 0.96 on CPAN ---
+	
 	* SLA.pm: Announce Fortran version support in documentation
 
 2002-09-15  Tim Jenness  <t.jenness@jach.hawaii.edu>
