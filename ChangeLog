@@ -1,3 +1,27 @@
+2001-04-24  Tim Jenness  <timj@jach.hawaii.edu>
+
+	* SLA.xs: update copyright
+
+	* MANIFEST: Add t/preces.t
+
+	* README: Tweak for 0.94 
+
+	* SLA.pm: Version 0.94. Update copyright.
+
+2000-11-21  Tim Jenness  <timj@jach.hawaii.edu>
+
+	* t/preces.t: Add test for slaPreces
+
+	* SLA.xs: slaPreces - the ra and dec variables are input and
+	output not just output.
+
+	* t/fk4to5.t: Use Test module
+
+2000-04-11  Tim Jenness  <timj@jach.hawaii.edu>
+
+	* t/fk4to5.t: Improve the test (and fix btoj for -00 decs)
+	(btoj): dont use abs($d), multiply by dsign instead.
+
 2000-03-28  Tim Jenness  <timj@jach.hawaii.edu>
 
 	* SLA.pm (ut2lst_tel): Add missing command
