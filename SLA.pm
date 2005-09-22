@@ -42,7 +42,7 @@ use strict;
 use Carp;
 use vars qw(@ISA $VERSION %EXPORT_TAGS);
 
-$VERSION = '0.98';
+$VERSION = '0.99';
 
 @ISA = qw(Exporter DynaLoader);
 
@@ -80,7 +80,7 @@ $VERSION = '0.98';
 			slaRvlsrd slaRvlsrk slaS2tp slaSep slaSubet
 			slaSupgal slaTp2s slaTp2v slaTps2c slaTpv2c
 			slaUnpcd slaV2tp slaVdv slaVxv slaWait slaXy2xy
-			slaZd
+			slaZd slaIntin
 			/],
 
 		'constants'=>[qw/
@@ -148,7 +148,7 @@ The implemented routines are:
  slaRefv slaRefz slaRverot slaRvgalc slaRvlg slaRvlsrd
  slaRvlsrk slaS2tp slaSep slaSubet slaSupgal slaTp2s slaTp2v
  slaTps2c slaTpv2c slaUnpcd slaV2tp slaVdv slaVxv slaWait
- slaXy2xy slaZd
+ slaXy2xy slaZd slaIntin
 
 Also, slaGresid and slaRandom are not in the C library (although they
 are in the Fortran version).  slaWait is implemented using the perl
@@ -180,11 +180,21 @@ sub slaWait ($) {
 #   occuring when 'c' is set to undef but is to be a return value
 #   have a perl layer that replaces undef with '' in order to fix the
 #   issue
+# We also do this so that a constant can be supplied as the argument.
+# undef first argument is converted to -1
 
 sub slaObs ($$$$$$) {
   my $c = (defined $_[1] ? $_[1] : '');
-  _slaObs($_[0], $c, $_[2], $_[3], $_[4], $_[5]);
-  $_[1] = $c; # use aliasing
+  my $outc;
+  my $n = (defined $_[0] ? $_[0] : -1);
+  _slaObs($n, $c, $outc, $_[2], $_[3], $_[4], $_[5]);
+
+  # Copy outc to the caller namespace only if a positive
+  # number was specified to slaObs
+  if ($n > 0) {
+    $_[1] = $outc;
+  }
+
   return;
 }
 
@@ -367,7 +377,7 @@ sub lstnow {
 
 =item B<ut2lst>
 
-Given the UT time, calculate the Modified Julian date and the 
+Given the UT time, calculate the Modified Julian date (UTC) and the 
 local sidereal time (radians) for the specified longitude.
 
  ($lst, $mjd) = ut2lst(yy, mn, dd, hh, mm, ss, long)
@@ -378,42 +388,39 @@ Longitude should be negative if degrees west and in radians.
 
 sub ut2lst {
 
-  croak 'Usage: ut2lst(yy,mn,dd,hh,mm,ss,long)' 
+  croak 'Usage: ut2lst(yy,mn,dd,hh,mm,ss,long)'
     unless scalar(@_) == 7;
 
   my ($yy, $mn, $dd, $hh, $mm, $ss, $long) = @_;
 
-  my ($rad, $j, $fd, $mjd, $slastatus, $gmst, $eqeqx, $lst);
-
   # Calculate fraction of day
-  slaDtf2r($hh, $mm, $ss, $rad, $j);
-
-  $fd = $rad / D2PI;
+  slaDtf2d($hh, $mm, $ss, my $fd, my $j);
+  if ($j != 0) {
+    croak "Error calculating fractional day with H=$hh M=$mm S=$ss\n";
+  }
 
   # Calculate modified julian date of UT day
-  slaCldj($yy, $mn, $dd, $mjd, $slastatus);
+  slaCldj($yy, $mn, $dd, my $mjd, my $slastatus);
 
   if ($slastatus != 0) {
     croak "Error calculating modified Julian date with args: $yy $mn $dd\n";
   }
 
   # Calculate sidereal time of greenwich
-  $gmst = slaGmsta($mjd, $fd);
+  my $gmst = slaGmsta($mjd, $fd);
 
   # Find MJD of current time (not just day)
   $mjd += $fd;
 
-  # Equation of the equinoxes
-  $eqeqx = slaEqeqx($mjd);
+  # Equation of the equinoxes (requires TT although makes very
+  # little differnece)
+  my $tt = $mjd + ( slaDtt($mjd) / 86_400.0);
+  my $eqeqx = slaEqeqx($tt);
 
   # Local sidereal time = GMST + EQEQX + Longitude in radians
-
-  $lst = $gmst + $eqeqx + $long;
-
-  $lst += D2PI if $lst < 0.0;
+  my $lst = slaDranrm($gmst + $eqeqx + $long);
 
   return ($lst, $mjd);
-
 }
 
 =item B<ut2lst_tel>
@@ -456,36 +463,38 @@ sub ut2lst_tel ($$$$$$$) {
 
 =head1 AUTHOR
 
-Tim Jenness E<gt>t.jenness@jach.hawaii.eduE<lt>
+Tim Jenness E<gt>tjenness@cpan.orgE<lt>
 
 =head1 REQUIREMENTS
 
-This module has been tested with the Starlink Fortran library v2.4-8
-(released September 2001) and 2.4-11 (released spring 2003) and the
-April 2002 and 2003 releases of the C library. If you are working with
-orbital elements you need a version of the library released sometime
-in 2002.
-
-You must have either the C version of the library or the Starlink
-Fortran version of the library in order to build this module.
-
-The Fortran version of SLALIB is currently available from Starlink under the
-Starlink Software Licence (effectively meaning free for non-commercial
-use). You can download it from Starlink (http://www.starlink.rl.ac.uk)
+The Fortran version of SLALIB is available from Starlink under the
+Gnu GPL. You can download it from Starlink (http://www.starlink.rl.ac.uk)
 using the Starlink Software Store
-(http://www.starlink.rl.ac.uk/Software/software_store.htm).
+(http://www.starlink.rl.ac.uk/Software/software_store.htm) or
+developers CVS (http://dev.starlink.ac.uk).
 Specifically: http://www.starlink.rl.ac.uk/cgi-store/storeform1?SLA
-Starlink have approved the release of this library using a GPL licence
-but the package has not yet been made available.
 
 The SLALIB library (C version) is proprietary.  Please contact Patrick
 Wallace (ptw@tpsoft.demon.co.uk) if you would like to obtain a copy.
 
 =head1 COPYRIGHT
 
-This module is copyright (C) 1998-2003 Tim Jenness and PPARC.  All rights
+This module is copyright (C) 1998-2005 Tim Jenness and PPARC.  All rights
 reserved.  This program is free software; you can redistribute it
 and/or modify it under the same terms as Perl itself.
+
+This program is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation; either version 2 of the License, or (at your option) any later
+version.
+
+This program is distributed in the hope that it will be useful,but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with
+this program; if not, write to the Free Software Foundation, Inc., 59 Temple
+Place,Suite 330, Boston, MA  02111-1307, USA
 
 =cut
 
