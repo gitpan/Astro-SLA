@@ -41,12 +41,13 @@ print "# Section 4.1.1 - Formatting angles\n";
   my $string = join(" ",@ints);
   my $i = 1;
   for my $tst (@ints) {
+    my $startpos = $i;
     Astro::SLA::slaIntin($string,$i, $ix, my $j);
-    is($tst, $ix, "Compare input with parsed integer");
+    is($ix, $tst, "Extract integer from '".substr($string,$startpos-1)."'");
     if ($tst >= 0) {
-      is($j,0,"Status from integer parse");
+      is($j,0,"Status from positive integer parse");
     } else {
-      is($j, -1, "Status [negative] from integer parse");
+      is($j, -1, "Status from negative integer parse");
     }
   }
 
@@ -366,7 +367,7 @@ my $ref = <<"EOF";
       Mercury   08 08 58.60  +19 20 57.1     9.3
       Venus     09 38 53.61  +15 35 32.8    22.8
       Moon      06 28 15.95  +23 17 21.3  1902.3
-      Mars      09 06 49.33  +17 52 26.6     4.0
+      Mars      09 06 49.34  +17 52 26.6     4.0
       Jupiter   00 11 12.08  -00 10 57.5    41.1
       Saturn    16 01 43.35  -18 36 55.9    18.2
       Uranus    00 13 33.54  +00 39 36.1     3.5

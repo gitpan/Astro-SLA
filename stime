@@ -75,7 +75,7 @@ L<Astro::SLA>
 
 =head1 REVISION
 
-$Id: stime,v 1.2 2004/02/04 00:42:08 timj Exp $
+$Id$
 
 =head1 COPYRIGHT
 
@@ -120,7 +120,7 @@ Tim Jenness, Remo Tilanus
 #
 #    14 Feb 2000 (rpt)
 #       Port to perl using Astro::SLA
-#    $Log: stime,v $
+#    $Log$
 #    Revision 1.2  2004/02/04 00:42:08  timj
 #    + Lots of tidying up
 #    + Now uses ut2lst_tel rather than lstnow_tel

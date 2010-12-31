@@ -1,11 +1,11 @@
 README
 ChangeLog
-Makefile.PL
+Build.PL
 MANIFEST
-SLA.pm
-SLA.xs
-arrays.c
-arrays.h
+lib/Astro/SLA.pm
+lib/Astro/SLA.xs
+src/arrays.c
+src/arrays.h
 typemap
 t/fk4to5.t
 t/slaObs.t
@@ -14,4 +14,4 @@ t/preces.t
 t/comet.t
 t/sun67.t
 stime
-META.yml                                 Module meta-data (added by MakeMaker)
+META.yml

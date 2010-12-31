@@ -1,14 +1,28 @@
-# http://module-build.sourceforge.net/META-spec.html
-#XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
-name:         Astro-SLA
-version:      0.99
-version_from: SLA.pm
-installdirs:  site
+---
+abstract: 'Perl interface to SLAlib positional astronomy library'
+author:
+  - 'Tim Jenness E<gt>tjenness@cpan.orgE<lt>'
+build_requires:
+  ExtUtils::CBuilder: 0
+  ExtUtils::F77: 0
+  Test::More: 0
+configure_requires:
+  Module::Build: 0.36
+generated_by: 'Module::Build version 0.3607'
+license: gpl
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: 1.4
+name: Astro-SLA
+provides:
+  Astro::SLA:
+    file: lib/Astro/SLA.pm
+    version: 1.00
 requires:
-    ExtUtils::F77:                 0
-    Getopt::Long:                  0
-    Pod::Usage:                    0
-    Test:                          0
-
-distribution_type: module
-generated_by: ExtUtils::MakeMaker version 6.17
+  Getopt::Long: 0
+  Pod::Usage: 0
+resources:
+  homepage: http://github.com/timj/perl-Astro-SLA/tree/master
+  license: http://opensource.org/licenses/gpl-license.php
+  repository: git://github.com/timj/perl-Astro-SLA.git
+version: 1.00
