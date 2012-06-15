@@ -1,5 +1,7 @@
+
 use strict;
 use warnings;
+use lib qw(inc);
 use File::Spec;
 use Module::Build;
 
@@ -15,11 +17,18 @@ my $use_fortran = -1;
 # Default location for the library. This is used if we fail to find
 # starlink fortran (in which case it is assumed to be a C library)
 # or use_fortran is set to 0 or 1
-# If you have an explicit non-standard path prepend -L/wherever
-my $sla_lib = ' -L/usr/local/lib -lsla ';
+
+# Can be set externally with the SLA_ROOT environment variable
+my $sla_root = "/usr/local/lib";
+
+if (exists $ENV{SLA_ROOT} && defined $ENV{SLA_ROOT} && -d $ENV{SLA_ROOT}) {
+  $sla_root = $ENV{SLA_ROOT};
+}
+
+my $sla_lib = "-L$sla_root/lib -lsla ";
 
 # Same for include files [only relevant for C version] [use -I]
-my $sla_inc = '-I/usr/local/include';
+my $sla_inc = "-I$sla_root/include";
 
 # Check valid range for the fortran switch
 if ($use_fortran != 0 && $use_fortran != -1 && $use_fortran != 1) {
@@ -30,28 +39,31 @@ if ($use_fortran != 0 && $use_fortran != -1 && $use_fortran != 1) {
 if ($use_fortran == -1) {
   use vars qw/ %StarConfig /;
 
-  # See if we can find a starlink system
-  # $STARLINK env overrides everything
-  if (exists $ENV{STARLINK} && defined $ENV{STARLINK}) {
-    print "Using STARLINK environment variable: $ENV{STARLINK}\n";
-    %StarConfig = (
-		   Star_Inc => $ENV{STARLINK}."/include",
-		   Star_Lib => $ENV{STARLINK}."/lib",
-		   Star_Bin => $ENV{STARLINK}."/bin",
-                  );
-  } else {
-    # Must look for it
-    eval "use Starlink::Config";
-    if ($@) {
-      # do not have a Starlink configuration so guess /star
-      %StarConfig = (
-  		     Star_Inc => '/star/include',
-		     Star_Lib => '/star/lib',
-		     Star_Bin => '/star/bin',
-		    );
-    } else {
-      print "Found Starlink configuration. Using $StarConfig{Star}\n";
+  # We first see if we can find Starlink::Config
+  my $has_star_conf = eval "use Starlink::Config; 1;";
+
+  if (!$has_star_conf) {
+    # Look for Starlink via the environment else use /star
+    my $root;
+    for my $testdir ($ENV{STARLINK_DIR}, "/star", "/stardev") {
+      if (defined $testdir && -d $testdir) {
+        $root = $testdir;
+        last;
+      }
     }
+
+    if (defined $root) {
+      %StarConfig = (
+                     Star_Inc => File::Spec->catdir($root, "include"),
+                     Star_Lib => File::Spec->catdir($root,"lib"),
+                     Star_Bin => File::Spec->catdir($root, "bin"),
+                    );
+    } else {
+      print "Unable to locate Starlink system. Switching to C library.\n";
+      $use_fortran = 0;
+    }
+  } else {
+    print "Found Starlink configuration. Using $StarConfig{Star}\n";
   }
 
   # Work out the library full path
@@ -59,7 +71,12 @@ if ($use_fortran == -1) {
 
   if (-e $lib) {
     print "Located Starlink SLALIB library in $StarConfig{Star_Lib}\n";
-    $sla_lib = " -L$StarConfig{Star_Lib} -lsla ";
+
+    # Sometimes we have to use CNF
+    my $slalibs = qx/ sla_link /;
+    $slalibs = "-lsla" unless defined $slalibs;
+
+    $sla_lib = " -L$StarConfig{Star_Lib} $slalibs ";
 
     # See if we can find the version
     eval { require Starlink::Versions; };
@@ -109,6 +126,12 @@ if ($use_fortran) {
 } else {
   print "Attempting to build against a C SLALIB library: $sla_lib\n";
 
+  use Devel::CheckLib;
+  unless (check_lib(LIBS => $sla_lib,INC=>$sla_inc)) {
+    print "You need either Fortan or C version of slalib. See README\n";
+    exit 0;
+  }
+
   # no special defines for the C version
 
   # Just need the math library
@@ -141,9 +164,13 @@ my $build = Module::Build->new
                },
    build_requires => {
                       "Test::More" => 0,
+                      "Test::Number::Delta" => 1.0,
                       %build_prereqs,
                      },
-   c_source => [ "src" ],
+   configure_requires => {
+                          "Module::Build" => 0.30,
+                         },
+   c_source => "src",  # Only one option so use single string
    extra_compiler_flags => [$sla_inc, @defines],
    extra_linker_flags => $libs,
   );
