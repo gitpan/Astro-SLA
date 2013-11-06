@@ -78,6 +78,10 @@ if ($use_fortran == -1) {
 
     $sla_lib = " -L$StarConfig{Star_Lib} $slalibs ";
 
+    # Only do this hack for Linux
+    $sla_lib .= "-Wl,-rpath,$StarConfig{Star_Lib} "
+      if $^O eq 'linux';
+
     # See if we can find the version
     eval { require Starlink::Versions; };
     if (!$@) {
